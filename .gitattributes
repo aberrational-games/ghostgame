@@ -1,0 +1,4 @@
+*.tscn lockable
+*.gd lockable
+*.tres lockable
+*.res lockable
