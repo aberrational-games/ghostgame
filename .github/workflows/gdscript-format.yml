@@ -1,0 +1,36 @@
+name: GDScript Formatting
+
+on:
+  pull_request:
+    paths:
+      - '**.gd'
+      - '.github/workflows/gdscript-format.yml'
+
+  push:
+    branches:
+      - main
+    paths:
+      - '**.gd'
+
+jobs:
+  formatting:
+    name: Check GDScript formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install gdtoolkit
+        run: pip install gdtoolkit
+
+      - name: Check formatting
+        run: gdformat --check .
+
+      - name: Run GDScript linter
+        run: gdlint .
