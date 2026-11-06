@@ -8,55 +8,43 @@ const PieMenuGroupScn = preload("scenes/pie_menu/PieMenuGroup.tscn")
 const DEFAULT_LINE_COLOR = Color.WHITE
 # [name, value]
 const DEBUG_DRAW_OPTIONS = [
-	["Normal", 0], ["Unshaded", 1], ["Lighting", 2], ["Overdraw", 3], ["Wireframe", 4],
+	["Normal", 0],
+	["Unshaded", 1],
+	["Lighting", 2],
+	["Overdraw", 3],
+	["Wireframe", 4],
 	[
 		"Advance",
 		[
-			["Shadows", 
+			[
+				"Shadows",
 				[
-					["Shadow Atlas", 9], ["Directional Shadow Atlas", 10], ["Directional Shadow Splits", 14]
+					["Shadow Atlas", 9],
+					["Directional Shadow Atlas", 10],
+					["Directional Shadow Splits", 14]
 				]
 			],
-			["Lights", 
+			["Lights", [["Omni Lights Cluster", 20], ["Spot Lights Cluster", 21]]],
+			["VoxelGI", [["VoxelGI Albedo", 6], ["VoxelGI Lighting", 7], ["VoxelGI Emission", 8]]],
+			["SDFGI", [["SDFGI", 16], ["SDFGI Probes", 17], ["GI Buffer", 18]]],
+			["Environment", [["SSAO", 12], ["SSIL", 13]]],
+			["Decals", [["Decal Atlas", 15], ["Decal Cluster", 22]]],
+			[
+				"Others",
 				[
-					["Omni Lights Cluster", 20], ["Spot Lights Cluster", 21]
-				]
-			],
-			["VoxelGI", 
-				[
-					["VoxelGI Albedo", 6], ["VoxelGI Lighting", 7], ["VoxelGI Emission", 8]
-				]
-			],
-			["SDFGI", 
-				[
-					["SDFGI", 16], ["SDFGI Probes", 17], ["GI Buffer", 18]
-				]
-			],
-			["Environment", 
-				[
-					["SSAO", 12], ["SSIL", 13]
-				]
-			],
-			["Decals", 
-				[
-					["Decal Atlas", 15], ["Decal Cluster", 22]
-				]
-			],
-			["Others", 
-				[
-					["Normal Buffer", 5], ["Scene Luminance", 11], ["Disable LOD", 19], ["Cluster Reflection Probes", 23], ["Occluders", 24], ["Motion Vectors", 25]
+					["Normal Buffer", 5],
+					["Scene Luminance", 11],
+					["Disable LOD", 19],
+					["Cluster Reflection Probes", 23],
+					["Occluders", 24],
+					["Motion Vectors", 25]
 				]
 			],
 		]
 	],
 ]
 
-enum SESSION {
-	TRANSLATE,
-	ROTATE,
-	SCALE,
-	NONE
-}
+enum SESSION { TRANSLATE, ROTATE, SCALE, NONE }
 
 var translate_snap_line_edit
 var rotate_snap_line_edit
@@ -97,7 +85,7 @@ var _cummulative_center_offset = 0
 var _max_x = 0
 var _min_x = 0
 var _cache_global_transforms = []
-var _cache_transforms = [] # Nodes' local transform relative to pivot_point
+var _cache_transforms = []  # Nodes' local transform relative to pivot_point
 var _input_string = ""
 var _is_global_on_session = false
 var _is_warping_mouse = false
@@ -110,6 +98,7 @@ func _init():
 	axis_im_material.flags_no_depth_test = true
 
 	overlay_label.set("custom_colors/font_color_shadow", Color.BLACK)
+
 
 func _ready():
 	var spatial_editor = Utils.get_spatial_editor(get_editor_interface().get_base_control())
@@ -130,14 +119,19 @@ func _ready():
 	debug_draw_pie_menu.theme_source_node = spatial_editor
 	debug_draw_pie_menu.connect("item_focused", _on_PieMenu_item_focused)
 	debug_draw_pie_menu.connect("item_selected", _on_PieMenu_item_selected)
-	var spatial_editor_viewport_container = Utils.get_spatial_editor_viewport_container(spatial_editor)
+	var spatial_editor_viewport_container = Utils.get_spatial_editor_viewport_container(
+		spatial_editor
+	)
 	if spatial_editor_viewport_container:
-		spatial_editor_viewports = Utils.get_spatial_editor_viewports(spatial_editor_viewport_container)
+		spatial_editor_viewports = Utils.get_spatial_editor_viewports(
+			spatial_editor_viewport_container
+		)
 	sync_settings()
+
 
 func _input(event):
 	if event is InputEventKey:
-		if event.pressed and not event.echo and not event.meta_pressed: # Check meta modifier to avoid conflict with Mac command
+		if event.pressed and not event.echo and not event.meta_pressed:  # Check meta modifier to avoid conflict with Mac command
 			match event.keycode:
 				KEY_Z:
 					var focus = find_focused_control(get_tree().root)
@@ -150,7 +144,14 @@ func _input(event):
 									debug_draw_pie_menu.hide()
 									get_viewport().set_input_as_handled()
 								else:
-									if not (event.ctrl_pressed or event.alt_pressed or event.shift_pressed) and current_session == SESSION.NONE:
+									if (
+										not (
+											event.ctrl_pressed
+											or event.alt_pressed
+											or event.shift_pressed
+										)
+										and current_session == SESSION.NONE
+									):
 										show_debug_draw_pie_menu()
 										get_viewport().set_input_as_handled()
 
@@ -167,17 +168,20 @@ func _input(event):
 						else:
 							toggle_constraint_axis(Vector3.UP)
 						get_viewport().set_input_as_handled()
-	
+
 	if event is InputEventMouseMotion:
 		if current_session != SESSION.NONE and overlay_control:
 			# Infinite mouse movement
 			var rect = overlay_control.get_rect()
 			var local_mouse_pos = overlay_control.get_local_mouse_position()
 			if not rect.has_point(local_mouse_pos):
-				var warp_pos = Utils.infinite_rect(rect, local_mouse_pos, -event.velocity.normalized() * rect.size.length())
+				var warp_pos = Utils.infinite_rect(
+					rect, local_mouse_pos, -event.velocity.normalized() * rect.size.length()
+				)
 				if warp_pos:
 					Input.warp_mouse(overlay_control.global_position + warp_pos)
 					_is_warping_mouse = true
+
 
 func _on_snap_value_changed(text, session):
 	match session:
@@ -188,19 +192,28 @@ func _on_snap_value_changed(text, session):
 		SESSION.SCALE:
 			scale_snap = text.to_float() / 100.0
 
+
 func _on_PieMenu_item_focused(menu, index):
 	var value = menu.buttons[index].get_meta("value", 0)
 	if not (value is Array):
 		switch_display_mode(value)
+
 
 func _on_PieMenu_item_selected(menu, index):
 	var value = menu.buttons[index].get_meta("value", 0)
 	if not (value is Array):
 		switch_display_mode(value)
 
+
 func show_debug_draw_pie_menu():
-	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(spatial_editor_viewports)
-	overlay_control = Utils.get_spatial_editor_viewport_control(spatial_editor_viewport) if spatial_editor_viewport else null
+	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(
+		spatial_editor_viewports
+	)
+	overlay_control = (
+		Utils.get_spatial_editor_viewport_control(spatial_editor_viewport)
+		if spatial_editor_viewport
+		else null
+	)
 	if not overlay_control:
 		return false
 	if overlay_control_canvas_layer.get_parent() != overlay_control:
@@ -212,20 +225,26 @@ func show_debug_draw_pie_menu():
 	debug_draw_pie_menu.popup(overlay_control.get_global_mouse_position())
 	return true
 
+
 func _on_local_space_button_toggled(pressed):
 	is_global = !pressed
 
+
 func _on_snap_button_toggled(pressed):
 	is_snapping = pressed
+
 
 func _handles(object):
 	if object is Node3D:
 		_is_editing = get_editor_interface().get_selection().get_selected_nodes().size()
 		return _is_editing
-	elif object.get_class() == "MultiNodeEdit": # Explicitly handle MultiNodeEdit, otherwise, it will active when selected Resource
-		_is_editing = get_editor_interface().get_selection().get_transformable_selected_nodes().size() > 0
+	elif object.get_class() == "MultiNodeEdit":  # Explicitly handle MultiNodeEdit, otherwise, it will active when selected Resource
+		_is_editing = (
+			get_editor_interface().get_selection().get_transformable_selected_nodes().size() > 0
+		)
 		return _is_editing
 	return false
+
 
 func _edit(object):
 	var scene_root = get_editor_interface().get_edited_scene_root()
@@ -243,6 +262,7 @@ func _edit(object):
 				axis_mesh_inst.get_parent().remove_child(axis_mesh_inst)
 				scene_root.get_parent().add_child(axis_mesh_inst)
 
+
 func find_focused_control(node):
 	if node is Control and node.has_focus():
 		return node
@@ -255,6 +275,7 @@ func find_focused_control(node):
 
 	return null
 
+
 func _forward_3d_gui_input(camera, event):
 	var forward = false
 	if current_session == SESSION.NONE:
@@ -264,7 +285,7 @@ func _forward_3d_gui_input(camera, event):
 				_is_pressing_right_mouse_button = event.is_pressed()
 		if _is_editing:
 			if event is InputEventKey:
-				if event.pressed and not event.meta_pressed: # Check meta modifier to avoid conflict with Mac command
+				if event.pressed and not event.meta_pressed:  # Check meta modifier to avoid conflict with Mac command
 					match event.keycode:
 						KEY_G:
 							start_session(SESSION.TRANSLATE, camera, event)
@@ -296,12 +317,12 @@ func _forward_3d_gui_input(camera, event):
 					commit_session()
 					end_session()
 					return true
-			
+
 			if event.keycode == KEY_SHIFT:
 				precision_mode = event.pressed
 				forward = true
 
-			if event.pressed and not event.meta_pressed: # Check meta modifier to avoid conflict with Mac command
+			if event.pressed and not event.meta_pressed:  # Check meta modifier to avoid conflict with Mac command
 				var event_text = event.as_text()
 				if append_input_string(event_text):
 					return true
@@ -357,7 +378,7 @@ func _forward_3d_gui_input(camera, event):
 						revert()
 						end_session()
 						return true
-		
+
 		if event is InputEventMouseButton:
 			if event.pressed:
 				if event.button_index == 2:
@@ -377,7 +398,8 @@ func _forward_3d_gui_input(camera, event):
 					forward = true
 
 	return forward
-	
+
+
 func _forward_3d_draw_over_viewport(overlay):
 	if current_session == SESSION.NONE:
 		if overlay_label.get_parent() != null:
@@ -408,18 +430,48 @@ func _forward_3d_draw_over_viewport(overlay):
 	match current_session:
 		SESSION.TRANSLATE:
 			var translation = _applying_transform.origin
-			overlay_label.text = ("Translate (%.3f, %.3f, %.3f) %s %s %s" % [translation.x, translation.y, translation.z, global_or_local, along_axis, snapped])
+			overlay_label.text = (
+				"Translate (%.3f, %.3f, %.3f) %s %s %s"
+				% [
+					translation.x,
+					translation.y,
+					translation.z,
+					global_or_local,
+					along_axis,
+					snapped
+				]
+			)
 		SESSION.ROTATE:
 			var rotation = _applying_transform.basis.get_euler()
-			overlay_label.text = ("Rotate (%.3f, %.3f, %.3f) %s %s %s" % [rad_to_deg(rotation.x), rad_to_deg(rotation.y), rad_to_deg(rotation.z), global_or_local, along_axis, snapped])
+			overlay_label.text = (
+				"Rotate (%.3f, %.3f, %.3f) %s %s %s"
+				% [
+					rad_to_deg(rotation.x),
+					rad_to_deg(rotation.y),
+					rad_to_deg(rotation.z),
+					global_or_local,
+					along_axis,
+					snapped
+				]
+			)
 		SESSION.SCALE:
 			var scale = _applying_transform.basis.get_scale()
-			overlay_label.text = ("Scale (%.3f, %.3f, %.3f) %s %s %s" % [scale.x, scale.y, scale.z, global_or_local, along_axis, snapped])
+			overlay_label.text = (
+				"Scale (%.3f, %.3f, %.3f) %s %s %s"
+				% [scale.x, scale.y, scale.z, global_or_local, along_axis, snapped]
+			)
 	if not _input_string.is_empty():
 		overlay_label.text += "(%s)" % _input_string
 	var is_pivot_point_behind_camera = _camera.is_position_behind(pivot_point)
-	var screen_origin = overlay.size / 2.0 if is_pivot_point_behind_camera else _camera.unproject_position(pivot_point)
-	Utils.draw_dashed_line(overlay, screen_origin, overlay.get_local_mouse_position(), line_color, 1, 5, true, true)
+	var screen_origin = (
+		overlay.size / 2.0
+		if is_pivot_point_behind_camera
+		else _camera.unproject_position(pivot_point)
+	)
+	Utils.draw_dashed_line(
+		overlay, screen_origin, overlay.get_local_mouse_position(), line_color, 1, 5, true, true
+	)
+
 
 func text_transform(text):
 	var input_value = text.to_float()
@@ -427,7 +479,10 @@ func text_transform(text):
 		SESSION.TRANSLATE:
 			_applying_transform.origin = constraint_axis * input_value
 		SESSION.ROTATE:
-			_applying_transform.basis = Basis().rotated((-_camera.global_transform.basis.z * constraint_axis).normalized(), deg_to_rad(input_value))
+			_applying_transform.basis = Basis().rotated(
+				(-_camera.global_transform.basis.z * constraint_axis).normalized(),
+				deg_to_rad(input_value)
+			)
 		SESSION.SCALE:
 			if constraint_axis.x:
 				_applying_transform.basis.x = Vector3.RIGHT * input_value
@@ -437,11 +492,15 @@ func text_transform(text):
 				_applying_transform.basis.z = Vector3.BACK * input_value
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
 	var t = _applying_transform
-	if is_global or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE):
+	if (
+		is_global
+		or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE)
+	):
 		t.origin += pivot_point
 		Utils.apply_global_transform(nodes, t, _cache_transforms)
 	else:
 		Utils.apply_transform(nodes, t, _cache_global_transforms)
+
 
 func mouse_transform(event):
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
@@ -454,9 +513,13 @@ func mouse_transform(event):
 	# Translation offset
 	var plane_transform = _camera.global_transform
 	plane_transform.origin = pivot_point
-	plane_transform.basis = plane_transform.basis.rotated(plane_transform.basis * Vector3.LEFT, deg_to_rad(90))
+	plane_transform.basis = plane_transform.basis.rotated(
+		plane_transform.basis * Vector3.LEFT, deg_to_rad(90)
+	)
 	if is_pivot_point_behind_camera:
-		plane_transform.origin = _camera.global_transform.origin + -_camera.global_transform.basis.z * 10.0
+		plane_transform.origin = (
+			_camera.global_transform.origin + -_camera.global_transform.basis.z * 10.0
+		)
 	var plane = Utils.transform_to_plane(plane_transform)
 	var axis_count = get_constraint_axis_count()
 	if axis_count == 2:
@@ -467,7 +530,9 @@ func mouse_transform(event):
 		plane = Plane(normal, plane_dist.x + plane_dist.y + plane_dist.z)
 	var world_pos = Utils.project_on_plane(_camera, event.position, plane)
 	if not is_global and is_single_node and axis_count < 3:
-		var normalized_node1_basis = node1.global_transform.basis.scaled(Vector3.ONE / node1.global_transform.basis.get_scale())
+		var normalized_node1_basis = node1.global_transform.basis.scaled(
+			Vector3.ONE / node1.global_transform.basis.get_scale()
+		)
 		world_pos = world_pos * normalized_node1_basis
 	if is_equal_approx(_last_world_pos.length(), 0):
 		_last_world_pos = world_pos
@@ -501,15 +566,33 @@ func mouse_transform(event):
 				_editing_transform = _editing_transform.translated(offset)
 				_applying_transform.origin = _editing_transform.origin
 				if is_snapping:
-					var snap = Vector3.ONE * (translate_snap if not precision_mode else translate_snap * precision_factor)
+					var snap = (
+						Vector3.ONE
+						* (
+							translate_snap
+							if not precision_mode
+							else translate_snap * precision_factor
+						)
+					)
 					_applying_transform.origin = _applying_transform.origin.snapped(snap)
 			SESSION.ROTATE:
-				var rotation_axis = (-_camera.global_transform.basis.z * constraint_axis).normalized()
+				var rotation_axis = (
+					(-_camera.global_transform.basis.z * constraint_axis).normalized()
+				)
 				if not rotation_axis.is_equal_approx(Vector3.ZERO):
-					_editing_transform.basis = _editing_transform.basis.rotated(rotation_axis, angle_offset)
+					_editing_transform.basis = _editing_transform.basis.rotated(
+						rotation_axis, angle_offset
+					)
 					var quat = _editing_transform.basis.get_rotation_quaternion()
 					if is_snapping:
-						var snap = Vector3.ONE * (rotate_snap if not precision_mode else rotate_snap * precision_factor)
+						var snap = (
+							Vector3.ONE
+							* (
+								rotate_snap
+								if not precision_mode
+								else rotate_snap * precision_factor
+							)
+						)
 						quat.from_euler(quat.get_euler().snapped(snap))
 					_applying_transform.basis = Basis(quat)
 			SESSION.SCALE:
@@ -521,13 +604,19 @@ func mouse_transform(event):
 					_editing_transform.basis.z = Vector3.BACK * (1 + _cummulative_center_offset)
 				_applying_transform.basis = _editing_transform.basis
 				if is_snapping:
-					var snap = Vector3.ONE * (scale_snap if not precision_mode else scale_snap * precision_factor)
+					var snap = (
+						Vector3.ONE
+						* (scale_snap if not precision_mode else scale_snap * precision_factor)
+					)
 					_applying_transform.basis.x = _applying_transform.basis.x.snapped(snap)
 					_applying_transform.basis.y = _applying_transform.basis.y.snapped(snap)
 					_applying_transform.basis.z = _applying_transform.basis.z.snapped(snap)
 
 	var t = _applying_transform
-	if is_global or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE):
+	if (
+		is_global
+		or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE)
+	):
 		t.origin += pivot_point
 		Utils.apply_global_transform(nodes, t, _cache_transforms)
 	else:
@@ -537,6 +626,7 @@ func mouse_transform(event):
 	_last_angle = angle
 	_is_warping_mouse = false
 
+
 func cache_selected_nodes_transforms():
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
 	var inversed_pivot_transform = Transform3D().translated(pivot_point).affine_inverse()
@@ -544,6 +634,7 @@ func cache_selected_nodes_transforms():
 		var node = nodes[i]
 		_cache_global_transforms.append(node.global_transform)
 		_cache_transforms.append(inversed_pivot_transform * node.global_transform)
+
 
 func update_pivot_point():
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
@@ -554,6 +645,7 @@ func update_pivot_point():
 			aabb.position = node.global_transform.origin
 		aabb = aabb.expand(node.global_transform.origin)
 	pivot_point = aabb.position + aabb.size / 2.0
+
 
 func start_session(session, camera, event):
 	if get_editor_interface().get_selection().get_transformable_selected_nodes().size() == 0:
@@ -570,11 +662,20 @@ func start_session(session, camera, event):
 		return
 
 	update_overlays()
-	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(spatial_editor_viewports)
-	overlay_control = Utils.get_spatial_editor_viewport_control(spatial_editor_viewport) if spatial_editor_viewport else null
+	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(
+		spatial_editor_viewports
+	)
+	overlay_control = (
+		Utils.get_spatial_editor_viewport_control(spatial_editor_viewport)
+		if spatial_editor_viewport
+		else null
+	)
+
 
 func end_session():
-	_is_editing = get_editor_interface().get_selection().get_transformable_selected_nodes().size() > 0
+	_is_editing = (
+		get_editor_interface().get_selection().get_transformable_selected_nodes().size() > 0
+	)
 	# Manually set is_global to avoid triggering revert()
 	if is_instance_valid(local_space_button):
 		local_space_button.button_pressed = !_is_global_on_session
@@ -582,19 +683,24 @@ func end_session():
 	clear_session()
 	update_overlays()
 
+
 func commit_session():
 	var undo_redo = get_undo_redo()
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
 	Utils.revert_transform(nodes, _cache_global_transforms)
 	undo_redo.create_action(SESSION.keys()[current_session].to_lower().capitalize())
 	var t = _applying_transform
-	if is_global or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE):
+	if (
+		is_global
+		or (constraint_axis.is_equal_approx(Vector3.ONE) and current_session == SESSION.TRANSLATE)
+	):
 		t.origin += pivot_point
 		undo_redo.add_do_method(Utils, "apply_global_transform", nodes, t, _cache_transforms)
 	else:
 		undo_redo.add_do_method(Utils, "apply_transform", nodes, t, _cache_global_transforms)
 	undo_redo.add_undo_method(Utils, "revert_transform", nodes, _cache_global_transforms)
 	undo_redo.commit_action()
+
 
 func commit_reset_transform():
 	var undo_redo = get_undo_redo()
@@ -617,6 +723,7 @@ func commit_reset_transform():
 			undo_redo.commit_action()
 	current_session = SESSION.NONE
 
+
 func commit_hide_nodes():
 	var undo_redo = get_undo_redo()
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
@@ -624,6 +731,7 @@ func commit_hide_nodes():
 	undo_redo.add_do_method(Utils, "hide_nodes", nodes, true)
 	undo_redo.add_undo_method(Utils, "hide_nodes", nodes, false)
 	undo_redo.commit_action()
+
 
 ## Opens a popup dialog to confirm deletion of selected nodes.
 func confirm_delete_selected_nodes():
@@ -654,10 +762,11 @@ func confirm_delete_selected_nodes():
 	popup.confirmed.connect(delete_selected_nodes)
 	popup.confirmed.connect(popup.queue_free)
 
+
 ## Instantly deletes selected nodes and creates an undo history entry.
 func delete_selected_nodes():
 	var undo_redo = get_undo_redo()
-	
+
 	var selected_nodes = get_editor_interface().get_selection().get_selected_nodes()
 	# Avoid creating an unnecessary history entry if no nodes are selected.
 	if selected_nodes.is_empty():
@@ -678,6 +787,7 @@ func delete_selected_nodes():
 		undo_redo.add_undo_reference(node)
 	undo_redo.commit_action()
 
+
 func revert():
 	var nodes = get_editor_interface().get_selection().get_transformable_selected_nodes()
 	Utils.revert_transform(nodes, _cache_global_transforms)
@@ -685,6 +795,7 @@ func revert():
 	_applying_transform = Transform3D.IDENTITY
 	_last_world_pos = Vector3.ZERO
 	axis_im.clear_surfaces()
+
 
 func clear_session():
 	current_session = SESSION.NONE
@@ -706,6 +817,7 @@ func clear_session():
 	_is_warping_mouse = false
 	axis_im.clear_surfaces()
 
+
 func sync_settings():
 	if translate_snap_line_edit:
 		translate_snap = translate_snap_line_edit.text.to_float()
@@ -718,11 +830,15 @@ func sync_settings():
 	if snap_button:
 		is_snapping = snap_button.button_pressed
 
+
 func switch_display_mode(debug_draw):
-	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(spatial_editor_viewports)
+	var spatial_editor_viewport = Utils.get_focused_spatial_editor_viewport(
+		spatial_editor_viewports
+	)
 	if spatial_editor_viewport:
 		var viewport = Utils.get_spatial_editor_viewport_viewport(spatial_editor_viewport)
 		viewport.debug_draw = debug_draw
+
 
 # Repeatedly applying same axis will results in toggling is_global, just like pressing xx, yy or zz in blender
 func toggle_constraint_axis(axis):
@@ -746,6 +862,7 @@ func toggle_constraint_axis(axis):
 			# Others situation
 			set_constraint_axis(axis)
 
+
 func toggle_input_string_sign():
 	if _input_string.begins_with("-"):
 		_input_string = _input_string.trim_prefix("-")
@@ -753,9 +870,11 @@ func toggle_input_string_sign():
 		_input_string = "-" + _input_string
 	input_string_changed()
 
+
 func trim_input_string():
 	_input_string = _input_string.substr(0, _input_string.length() - 1)
 	input_string_changed()
+
 
 func append_input_string(text):
 	text = "." if text == "Period" else text
@@ -763,6 +882,7 @@ func append_input_string(text):
 		_input_string += text
 		input_string_changed()
 		return true
+
 
 func input_string_changed():
 	if not _input_string.is_empty():
@@ -773,6 +893,7 @@ func input_string_changed():
 		Utils.revert_transform(nodes, _cache_global_transforms)
 	update_overlays()
 
+
 func get_constraint_axis_count():
 	var axis_count = 3
 	if constraint_axis.x == 0:
@@ -782,6 +903,7 @@ func get_constraint_axis_count():
 	if constraint_axis.z == 0:
 		axis_count -= 1
 	return axis_count
+
 
 func set_constraint_axis(v):
 	revert()
@@ -794,6 +916,7 @@ func set_constraint_axis(v):
 		text_transform(_input_string)
 	update_overlays()
 
+
 func set_is_global(v):
 	if is_global != v:
 		if is_instance_valid(local_space_button):
@@ -804,6 +927,7 @@ func set_is_global(v):
 		if not _input_string.is_empty():
 			text_transform(_input_string)
 		update_overlays()
+
 
 func draw_axises():
 	if not constraint_axis.is_equal_approx(Vector3.ONE):
@@ -821,8 +945,18 @@ func draw_axises():
 			var color = axis_line.get("color")
 			if is_global:
 				var is_pivot_point_behind_camera = _camera.is_position_behind(pivot_point)
-				var axis_origin = _camera.global_transform.origin + -_camera.global_transform.basis.z * 10.0 if is_pivot_point_behind_camera else pivot_point
+				var axis_origin = (
+					_camera.global_transform.origin + -_camera.global_transform.basis.z * 10.0
+					if is_pivot_point_behind_camera
+					else pivot_point
+				)
 				Utils.draw_axis(axis_im, axis_origin, axis, axis_length, color)
 			else:
 				for node in nodes:
-					Utils.draw_axis(axis_im, node.global_transform.origin, node.global_transform.basis * axis, axis_length, color)
+					Utils.draw_axis(
+						axis_im,
+						node.global_transform.origin,
+						node.global_transform.basis * axis,
+						axis_length,
+						color
+					)
