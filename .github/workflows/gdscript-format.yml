@@ -30,8 +30,8 @@ jobs:
         run: |
           wget https://github.com/GDQuest/GDScript-formatter/releases/download/0.27.0/gdscript-formatter-0.27.0-linux-x86_64.zip
           unzip gdscript-formatter-0.27.0-linux-x86_64.zip
-          chmod +x gdscript-formatter
-          sudo mv gdscript-formatter /usr/local/bin/gdscript-formatter
+          chmod +x gdscript-formatter-0.27.0-linux-x86_64
+          sudo mv gdscript-formatter-0.27.0-linux-x86_64 /usr/local/bin/gdscript-formatter
 
       - name: Check formatting
         id: format
