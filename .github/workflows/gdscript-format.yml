@@ -26,13 +26,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install gdtoolkit
-        run: pip install gdtoolkit
+      - name: Install GDQuest GDScript Formatter
+        run: |
+          wget https://github.com/GDQuest/GDScript-formatter/releases/download/0.27.0/gdscript-formatter-0.27.0-linux-x86_64.zip
+          unzip gdscript-formatter-0.27.0-linux-x86_64.zip
+          chmod +x gdscript-formatter
+          sudo mv gdscript-formatter /usr/local/bin/gdscript-formatter
 
       - name: Check formatting
         id: format
@@ -46,7 +45,7 @@ jobs:
             exit 0
           fi
 
-          if gdformat --check "${files[@]}" > format-check.txt 2>&1; then
+          if gdscript-formatter --check "${files[@]}" > format-check.txt 2>&1; then
             echo "exit_code=0" >> "$GITHUB_OUTPUT"
           else
             echo "exit_code=1" >> "$GITHUB_OUTPUT"
@@ -61,7 +60,9 @@ jobs:
           mapfile -t files < <(find . -type f -name '*.gd' -not -path './addons/*')
 
           if [[ ${#files[@]} -gt 0 ]]; then
-            gdformat --diff "${files[@]}" > format-diff.txt 2>&1 || true
+            gdscript-formatter "${files[@]}" > /dev/null 2>&1 || true
+            git diff > format-diff.txt
+            git checkout .
           else
             echo "No GDScript files to check." > format-diff.txt
           fi
@@ -78,7 +79,7 @@ jobs:
             exit 0
           fi
 
-          if gdlint "${files[@]}" > lint-report.txt 2>&1; then
+          if gdscript-formatter lint "${files[@]}" > lint-report.txt 2>&1; then
             echo "exit_code=0" >> "$GITHUB_OUTPUT"
           else
             echo "exit_code=1" >> "$GITHUB_OUTPUT"
@@ -127,8 +128,8 @@ jobs:
               '',
               '| Check | Result |',
               '|---|---|',
-              `| Formatting (gdformat) | ${formatFailed ? '❌ Failed' : '✅ Passed'} |`,
-              `| Linting (gdlint) | ${lintFailed ? '❌ Failed' : '✅ Passed'} |`,
+              `| Formatting (gdscript-formatter) | ${formatFailed ? '❌ Failed' : '✅ Passed'} |`,
+              `| Linting (gdscript-formatter lint) | ${lintFailed ? '❌ Failed' : '✅ Passed'} |`,
               ''
             ];
 
@@ -136,7 +137,7 @@ jobs:
               lines.push(
                 '### Formatting violations',
                 '',
-                'Run `gdformat .` locally to apply the suggested formatting.',
+                'Run the formatter locally to apply the suggested formatting.',
                 '',
                 '<details open>',
                 '<summary>View formatting diff</summary>',
