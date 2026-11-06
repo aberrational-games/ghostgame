@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://c1nixrf3uwgi6"]
+
+[ext_resource type="Script" uid="uid://bwu6e7f428ank" path="res://components/server_match_manager/server_match_manager.gd" id="1_5skll"]
+[ext_resource type="PackedScene" uid="uid://bhpow4ql0tdgp" path="res://components/server_walkie_manager/server_walkie_manager.tscn" id="2_mv38x"]
+
+[node name="ServerMatchManager" type="Node" unique_id=1899130664]
+script = ExtResource("1_5skll")
+
+[node name="ServerWalkieManager" parent="." unique_id=2038287423 instance=ExtResource("2_mv38x")]
+unique_name_in_owner = true
