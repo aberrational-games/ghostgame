@@ -1,4 +1,3 @@
-
 name: GDScript Formatting
 
 on:
@@ -39,7 +38,15 @@ jobs:
         id: format
         shell: bash
         run: |
-          if gdformat --check . > format-check.txt 2>&1; then
+          mapfile -t files < <(find . -type f -name '*.gd' -not -path './addons/*')
+
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No GDScript files to check."
+            echo "exit_code=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if gdformat --check "${files[@]}" > format-check.txt 2>&1; then
             echo "exit_code=0" >> "$GITHUB_OUTPUT"
           else
             echo "exit_code=1" >> "$GITHUB_OUTPUT"
@@ -49,14 +56,29 @@ jobs:
 
       - name: Generate formatting diff
         if: always()
+        shell: bash
         run: |
-          gdformat --diff . > format-diff.txt 2>&1 || true
+          mapfile -t files < <(find . -type f -name '*.gd' -not -path './addons/*')
+
+          if [[ ${#files[@]} -gt 0 ]]; then
+            gdformat --diff "${files[@]}" > format-diff.txt 2>&1 || true
+          else
+            echo "No GDScript files to check." > format-diff.txt
+          fi
 
       - name: Run GDScript linter
         id: lint
         shell: bash
         run: |
-          if gdlint . > lint-report.txt 2>&1; then
+          mapfile -t files < <(find . -type f -name '*.gd' -not -path './addons/*')
+
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "No GDScript files to lint."
+            echo "exit_code=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if gdlint "${files[@]}" > lint-report.txt 2>&1; then
             echo "exit_code=0" >> "$GITHUB_OUTPUT"
           else
             echo "exit_code=1" >> "$GITHUB_OUTPUT"
