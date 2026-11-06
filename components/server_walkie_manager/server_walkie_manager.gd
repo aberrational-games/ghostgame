@@ -14,6 +14,7 @@ var peer_channel_map: Dictionary[int, int] = {} #peer_id (int), channel_id (int)
 signal channel_state_changed(channel_id: int, state: int, listeners: Array[int], transmitters: Array[int])
 
 func _ready() -> void:
+	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	for channel_count in range(WalkieTalkieConfig.CHANNEL_COUNT):
 		channels.append(ChannelData.new())
 
@@ -81,3 +82,6 @@ func _remove_player_from_channels(sender_id: int) -> void:
 		previous_channel.transmitters.erase(sender_id)
 		peer_channel_map.erase(sender_id)
 		_recalculate_channel_state(previous_channel_id)
+
+func _on_peer_disconnected(peer_id: int) -> void:
+	_remove_player_from_channels(peer_id)
