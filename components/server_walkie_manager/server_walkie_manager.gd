@@ -27,7 +27,7 @@ signal channel_state_changed(
 
 func _ready() -> void:
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
-	for channel_count in range(WalkieTalkieConfig.CHANNEL_COUNT):
+	for channel_count in range(Services.WalkieTalkieConfig.CHANNEL_COUNT):
 		channels.append(ChannelData.new())
 
 
@@ -35,7 +35,7 @@ func _ready() -> void:
 func tune_channel(channel_id: int) -> void:
 	if not multiplayer.is_server():
 		return
-	if channel_id < -1 or channel_id >= WalkieTalkieConfig.CHANNEL_COUNT:
+	if channel_id < -1 or channel_id >= Services.WalkieTalkieConfig.CHANNEL_COUNT:
 		return
 	var sender_id = multiplayer.get_remote_sender_id()
 	_remove_player_from_channels(sender_id)
@@ -51,7 +51,7 @@ func tune_channel(channel_id: int) -> void:
 func request_transmit(channel_id: int, is_transmitting: bool) -> void:
 	if not multiplayer.is_server():
 		return
-	if channel_id < 0 or channel_id >= WalkieTalkieConfig.CHANNEL_COUNT:
+	if channel_id < 0 or channel_id >= Services.WalkieTalkieConfig.CHANNEL_COUNT:
 		return
 	var sender_id = multiplayer.get_remote_sender_id()
 	var target_channel: ChannelData = channels[channel_id]
@@ -60,17 +60,15 @@ func request_transmit(channel_id: int, is_transmitting: bool) -> void:
 	if is_transmitting:
 		if target_channel.transmitters.has(sender_id):
 			return
-		else:
-			if target_channel.listeners.has(sender_id):
-				target_channel.listeners.erase(sender_id)
-			target_channel.transmitters.append(sender_id)
+		if target_channel.listeners.has(sender_id):
+			target_channel.listeners.erase(sender_id)
+		target_channel.transmitters.append(sender_id)
 	else:
 		if target_channel.listeners.has(sender_id):
 			return
-		else:
-			if target_channel.transmitters.has(sender_id):
-				target_channel.transmitters.erase(sender_id)
-			target_channel.listeners.append(sender_id)
+		if target_channel.transmitters.has(sender_id):
+			target_channel.transmitters.erase(sender_id)
+		target_channel.listeners.append(sender_id)
 	_recalculate_channel_state(channel_id)
 
 

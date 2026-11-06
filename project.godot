@@ -16,7 +16,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-WalkieTalkieConfig="*uid://b3x4uwyf6m7ia"
+Services="*uid://c6wdgean5buv1"
 
 [display]
 
