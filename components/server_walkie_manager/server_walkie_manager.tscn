@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://bhpow4ql0tdgp"]
+
+[ext_resource type="Script" uid="uid://cg58n4fc4rhhh" path="res://components/server_walkie_manager/server_walkie_manager.gd" id="1_qrl1l"]
+
+[node name="ServerWalkieManager" type="Node" unique_id=2038287423]
+script = ExtResource("1_qrl1l")

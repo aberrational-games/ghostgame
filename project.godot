@@ -14,6 +14,10 @@ config/name="ghostgame"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[autoload]
+
+WalkieTalkieConfig="*uid://b3x4uwyf6m7ia"
+
 [display]
 
 window/size/viewport_width=1920
